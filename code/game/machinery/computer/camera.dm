@@ -18,12 +18,14 @@ var/global/list/tv_monitors = list()
 
 /obj/machinery/computer/security/New()
 	..()
-	sorted_cams = get_cameras()
 	var/datum/action/camera/previous/P = new(src, current)
 	var/datum/action/camera/cancel/C = new(src, current)
 	var/datum/action/camera/listing/L = new(src, current)
 	var/datum/action/camera/next/N = new(src, current)
 	our_actions = list(P, C, L, N)
+	var/list/camera_list = get_cameras()
+	if (camera_list.len)
+		current = camera_list[1]
 	tv_monitors += src
 
 /obj/machinery/computer/security/Destroy()
