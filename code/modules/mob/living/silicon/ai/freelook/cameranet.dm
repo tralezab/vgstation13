@@ -1,3 +1,4 @@
+lines (118 sloc) 4.59 KB
 // CAMERA NET
 //
 // The datum containing all the chunks.
@@ -149,7 +150,6 @@ var/datum/cameranet/cameranet = new()
 /*
 /turf/verb/view_chunk()
 	set src in world
-
 	if(cameranet.chunkGenerated(x, y, z))
 		var/datum/camerachunk/chunk = cameranet.getCameraChunk(x, y, z)
 		usr.client.debug_variables(chunk)
