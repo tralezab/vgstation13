@@ -77,12 +77,26 @@ var/datum/cameranet/cameranet = new()
 // Removes a camera from a chunk.
 
 /datum/cameranet/proc/removeCamera(obj/machinery/camera/c)
+	for (var/obj/machinery/computer/security/S in tv_monitors)
+		if (c in S.sorted_cams)
+			var/index = S.sorted_cams.Find(c)
+			var/actual_index = get_insert_index(S.sorted_cams, S.deactivated_cams, index)
+			actual_index = num2text(actual_index) // Because you can't access via L[x] if x is an integer in an associative list.
+			S.sorted_cams -= c
+			S.deactivated_cams[actual_index] = c
 	if(c.can_use())
 		majorChunkChange(c, 0)
 
 // Add a camera to a chunk.
 
 /datum/cameranet/proc/addCamera(obj/machinery/camera/c)
+	for (var/obj/machinery/computer/security/S in tv_monitors)
+		for (var/index in S.deactivated_cams.len)
+			if (c == S.deactivated_cams[index]) // The camera we added was sitting in the deactivated list.
+				index = num2text(index) // Because you can't access via L[x] if x is an integer in an associative list.
+				S.deactivated_cams -= c
+				S.sorted_cams.Insert(index, c)
+			break
 	if(c.can_use())
 		majorChunkChange(c, 1)
 
