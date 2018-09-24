@@ -35,6 +35,10 @@ var/datum/subsystem/more_init/SSmore_init
 		log_startup_progress("  Finished caching jukebox playlists in [stop_watch(watch)]s.")
 	..()
 
+	for (var/obj/machinery/computer/security/S in tv_monitors)
+		if (istype(S, /obj/item/weapon/circuitboard/security/advanced))
+			continue
+		S.init_cams()
 
 /datum/subsystem/more_init/proc/buildcamlist()
 	adv_camera.camerasbyzlevel = list()

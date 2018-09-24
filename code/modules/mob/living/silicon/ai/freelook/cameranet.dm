@@ -91,7 +91,7 @@ var/datum/cameranet/cameranet = new()
 
 /datum/cameranet/proc/addCamera(obj/machinery/camera/c)
 	for (var/obj/machinery/computer/security/S in tv_monitors)
-		for (var/index in S.deactivated_cams.len)
+		for (var/index in S.deactivated_cams)
 			if (c == S.deactivated_cams[index]) // The camera we added was sitting in the deactivated list.
 				index = num2text(index) // Because you can't access via L[x] if x is an integer in an associative list.
 				S.deactivated_cams -= c

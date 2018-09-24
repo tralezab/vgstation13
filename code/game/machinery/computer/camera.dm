@@ -13,8 +13,9 @@ var/global/list/tv_monitors = list()
 	var/mapping = 0//For the overview file, interesting bit of code.
 
 	var/list/datum/action/camera/our_actions = list()
-	var/static/list/obj/machinery/camera/sorted_cams = list()
-	var/static/list/obj/machinery/camera/deactivated_cams = list()
+	var/list/obj/machinery/camera/sorted_cams = list()
+	var/list/obj/machinery/camera/deactivated_cams = list()
+	var/list/obj/machinery/camera/cyborg_cams = list()
 
 	light_color = LIGHT_COLOR_RED
 
@@ -22,16 +23,17 @@ var/global/list/tv_monitors = list()
 	..()
 	var/datum/action/camera/previous/P = new(src)
 	var/datum/action/camera/cancel/C = new(src)
+	var/datum/action/camera/cyborg/C1 = new(src)
 	var/datum/action/camera/listing/L = new(src)
 	var/datum/action/camera/next/N = new(src)
-	our_actions = list(P, C, L, N)
+	our_actions = list(P, C, C1, L, N)
 
 	if (ticker && ticker.mode == GAME_STATE_PLAYING)
-		initialize()
+		init_cams()
 
 	tv_monitors += src
 
-/obj/machinery/computer/security/initialize()
+/obj/machinery/computer/security/proc/init_cams()
 	. = ..()
 	sorted_cams = get_cameras()
 	if (sorted_cams.len)
@@ -121,15 +123,6 @@ var/global/list/tv_monitors = list()
 
 	light_color = LIGHT_COLOR_PINK
 
-/obj/machinery/computer/security/engineering
-	name = "Engineering Cameras"
-	desc = "Used to monitor engineering silicons and alarms."
-	icon_state = "engineeringcameras"
-	network = list(CAMERANET_ENGI,CAMERANET_POWERALARMS,CAMERANET_ATMOSALARMS,CAMERANET_FIREALARMS)
-	circuit = "/obj/item/weapon/circuitboard/security/engineering"
-
-	light_color = LIGHT_COLOR_YELLOW
-
 /obj/machinery/computer/security/proc/set_camera(var/mob/living/user, var/obj/machinery/camera/C)
 	if(C)
 		if ((!Adjacent(user) || user.machine != src || user.blinded || user.isStunned() || !( C.can_use() )) && (!istype(user, /mob/living/silicon/ai)))
@@ -159,7 +152,6 @@ var/global/list/tv_monitors = list()
 			C.network = list(C.network)
 		var/list/tempnetwork = C.network & network
 		if(tempnetwork.len)
-			to_chat(world, "[src] - adding [C]")
 			D.Add(C)
 
 	D = camera_sort(D)
@@ -188,6 +180,28 @@ var/global/list/tv_monitors = list()
 	var/obj/machinery/camera/C = sorted_cams[place]
 
 	set_camera(user, C)
+
+// -- Unlike security cameras (who are activated by default), Engineering cameras are dynamic.
+// They add & remove themselves from the list as power alarms go.
+
+/obj/machinery/computer/security/engineering
+	name = "Engineering Cameras"
+	desc = "Used to monitor engineering silicons and alarms."
+	icon_state = "engineeringcameras"
+	network = list(CAMERANET_ENGI,CAMERANET_POWERALARMS,CAMERANET_ATMOSALARMS,CAMERANET_FIREALARMS)
+	circuit = "/obj/item/weapon/circuitboard/security/engineering"
+
+	light_color = LIGHT_COLOR_YELLOW
+	var/sorted = FALSE
+
+/obj/machinery/computer/security/engineering/attack_hand(var/mob/user)
+	if (!sorted)
+		sorted_cams = get_cameras()
+		sorted = TRUE
+	if (sorted_cams.len)
+		current = sorted_cams[1]
+	. = ..()
+
 
 // Action buttons for camera cyclin
 
@@ -264,3 +278,32 @@ var/global/list/tv_monitors = list()
 /datum/action/camera/cancel/Trigger()
 	var/mob/living/user = owner
 	user.cancel_camera()
+
+/datum/action/camera/cyborg
+	name = "Cyborg camera listing"
+	desc = "List all the cyborg cameras conected to this network."
+	icon_icon = 'icons/obj/camera_buttons.dmi'
+	button_icon_state = "robot"
+
+/datum/action/camera/cyborg/Trigger()
+	var/mob/living/user = owner
+	if(!isAI(user))
+		user.set_machine(our_computer)
+
+	var/list/L = list()
+
+	for(var/obj/machinery/camera/C in our_computer.cyborg_cams)
+		L[text("[][]", C.c_tag, (C.status ? null : " (Deactivated)"))] = C
+
+	if (!L.len)
+		to_chat(user, "<span class='warning'>No robots connected.</span>")
+
+	var/t = input(user, "Which camera should you change to?") as null|anything in L
+	if(!t || t == "Cancel")
+		user.cancel_camera()
+		return 0
+	user.set_machine(our_computer)
+
+	var/obj/machinery/camera/C = L[t]
+
+	our_computer.set_camera(user, C)

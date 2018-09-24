@@ -5,6 +5,7 @@
 
 /obj/machinery/computer/security/advanced/New()
 	..()
+	current = null
 	html_machines += src
 
 /obj/item/weapon/circuitboard/security/advanced

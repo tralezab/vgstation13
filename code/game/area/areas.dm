@@ -106,8 +106,12 @@ var/area/space_area
 				cameras += C
 				if(state == 1)
 					C.network.Remove(CAMERANET_POWERALARMS)
+					for (var/obj/machinery/computer/security/engineering/E in tv_monitors)
+						E.sorted = FALSE
 				else
 					C.network.Add(CAMERANET_POWERALARMS)
+					for (var/obj/machinery/computer/security/engineering/E in tv_monitors)
+						E.sorted = FALSE
 			for (var/mob/living/silicon/aiPlayer in player_list)
 				if(aiPlayer.z == source.z)
 					if (state == 1)
@@ -155,6 +159,8 @@ var/area/space_area
 			for(var/obj/machinery/camera/C in src)
 				cameras += C
 				C.network.Add(CAMERANET_ATMOSALARMS)
+				for (var/obj/machinery/computer/security/engineering/E in tv_monitors)
+					E.sorted = FALSE
 			for(var/mob/living/silicon/aiPlayer in player_list)
 				aiPlayer.triggerAlarm("Atmosphere", src, cameras, src)
 			for(var/obj/machinery/computer/station_alert/a in machines)
@@ -166,6 +172,8 @@ var/area/space_area
 		else if (atmosalm == 2)
 			for(var/obj/machinery/camera/C in src)
 				C.network.Remove(CAMERANET_ATMOSALARMS)
+				for (var/obj/machinery/computer/security/engineering/E in tv_monitors)
+					E.sorted = FALSE
 			for(var/mob/living/silicon/aiPlayer in player_list)
 				aiPlayer.cancelAlarm("Atmosphere", src, src)
 			for(var/obj/machinery/computer/station_alert/a in machines)
@@ -244,6 +252,8 @@ var/area/space_area
 		for (var/obj/machinery/camera/C in src)
 			cameras.Add(C)
 			C.network.Add(CAMERANET_FIREALARMS)
+			for (var/obj/machinery/computer/security/engineering/E in tv_monitors)
+				E.sorted = FALSE
 		for (var/mob/living/silicon/ai/aiPlayer in player_list)
 			aiPlayer.triggerAlarm("Fire", src, cameras, src)
 		for (var/obj/machinery/computer/station_alert/a in machines)
@@ -261,6 +271,8 @@ var/area/space_area
 		updateicon()
 		for (var/obj/machinery/camera/C in src)
 			C.network.Remove(CAMERANET_FIREALARMS)
+			for (var/obj/machinery/computer/security/engineering/E in tv_monitors)
+				E.sorted = FALSE
 		for (var/mob/living/silicon/ai/aiPlayer in player_list)
 			aiPlayer.cancelAlarm("Fire", src, src)
 		for (var/obj/machinery/computer/station_alert/a in machines)
