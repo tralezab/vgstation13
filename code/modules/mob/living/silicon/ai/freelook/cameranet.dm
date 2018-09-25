@@ -86,7 +86,7 @@ var/datum/cameranet/cameranet = new()
 				var/actual_index = get_insert_index(net,dea_net, index)
 				actual_index = num2text(actual_index) // Because you can't access via L[x] if x is an integer in an associative list.
 				net -= c
-				dea_net[actual_index] = c
+				dea_net[actual_index] += c
 		break // Static lists ; no need to update it for each computer.
 	if(c.can_use())
 		majorChunkChange(c, 0)

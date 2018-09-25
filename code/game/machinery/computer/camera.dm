@@ -31,6 +31,8 @@ var/global/list/tv_monitors = list()
 		CAMERANET_FIREALARMS 	= list(),
 		CAMERANET_ATMOSALARMS	= list(),
 		CAMERANET_POWERALARMS	= list(),
+		CAMERANET_SINGULARITY	= list(),
+		CAMERANET_RD			= list(),
 	)
 	var/static/list/obj/machinery/camera/deactivated_cams = list(
 		CAMERANET_SS13 		= list(),
@@ -48,6 +50,8 @@ var/global/list/tv_monitors = list()
 		CAMERANET_FIREALARMS 	= list(),
 		CAMERANET_ATMOSALARMS	= list(),
 		CAMERANET_POWERALARMS	= list(),
+		CAMERANET_SINGULARITY	= list(),
+		CAMERANET_RD			= list(),
 	)
 	var/list/obj/machinery/camera/cyborg_cams = list(
 		CAMERANET_ROBOTS = list(), // Borgos
@@ -65,7 +69,7 @@ var/global/list/tv_monitors = list()
 	var/datum/action/camera/next/N = new(src)
 	our_actions = list(P, C, C1, L, N)
 
-	if (ticker && ticker.mode == GAME_STATE_PLAYING)
+	if (ticker && ticker.current_state  == GAME_STATE_PLAYING)
 		init_cams()
 
 	tv_monitors += src
@@ -114,6 +118,8 @@ var/global/list/tv_monitors = list()
 		user.set_machine(src)
 
 	for (var/datum/action/camera/action in our_actions)
+		if (action.owner && action.owner != user)
+			action.owner.cancel_camera()
 		action.Grant(user)
 
 /obj/machinery/computer/security/telescreen
@@ -185,13 +191,13 @@ var/global/list/tv_monitors = list()
 /obj/machinery/computer/security/proc/get_cameras()
 
 	for (var/obj/machinery/camera/C in cameranet.cameras)
-		if(!istype(C.network, /list))
-			var/turf/T = get_turf(C)
-			WARNING("[C] - Camera at ([T.x],[T.y],[T.z]) has a non list for network, [C.network]")
-			C.network = list(C.network)
-		var/list/tempnetwork = C.network & network
-		for (var/net in tempnetwork)
+		for (var/net in C.network)
+			to_chat(world, "get_cameras() is adding [C] to [net] in [src]")
 			sorted_cams[net] += C
+
+	for (var/net in sorted_cams)
+		var/list/that_network = sorted_cams[net]
+		that_network = camera_sort(that_network)
 
 /obj/machinery/computer/security/proc/next(var/mob/living/user)
 
@@ -242,16 +248,22 @@ var/global/list/tv_monitors = list()
 	circuit = "/obj/item/weapon/circuitboard/security/engineering"
 
 	light_color = LIGHT_COLOR_YELLOW
-	var/sorted = FALSE
+	var/static/sorted = FALSE
 
 /obj/machinery/computer/security/engineering/attack_hand(var/mob/user)
 	if (!sorted)
 		sorted_cams = get_cameras()
 		sorted = TRUE
 	if (sorted_cams.len)
-		current = sorted_cams[1]
+		var/list/net = sorted_cams[1]
+		if (net.len)
+			current = net[1]
 	. = ..()
 
+/obj/machinery/computer/security/engineering/get_cameras()
+	for (var/net in network)
+		var/list/cameras_to_sort = sorted_cams[net]
+		cameras_to_sort = camera_sort(cameras_to_sort)
 
 // Action buttons for camera cyclin
 

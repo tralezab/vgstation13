@@ -35,6 +35,8 @@ var/list/camera_names=list()
 
 	var/vision_flags = SEE_SELF //Only applies when viewing the camera through a console.
 
+var/list/camera_types = list()
+
 /obj/machinery/camera/update_icon()
 	var/EMPd = stat & EMPED
 	var/deactivated = !status
@@ -48,6 +50,12 @@ var/list/camera_names=list()
 		icon_state = "[camtype]emp"
 	else
 		icon_state = "[camtype]"
+
+/obj/machinery/camera/New(...)
+	..()
+	for (var/x in network)
+		if (!(x in camera_types))
+			camera_types += x
 
 /obj/machinery/camera/proc/update_hear()//only cameras with voice analyzers can hear, to reduce the number of unecessary /mob/virtualhearer
 	if(!hear_voice && isHearing())
