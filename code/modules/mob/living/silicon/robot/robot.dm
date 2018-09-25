@@ -126,9 +126,7 @@
 		if(!scrambledcodes)
 			camera.network = list(CAMERANET_SS13,CAMERANET_ROBOTS)
 			for (var/obj/machinery/computer/security/S in tv_monitors)
-				var/list/tempnetwork = camera.network & S.network
-				if (tempnetwork.len)
-					S.cyborg_cams += camera
+				S.cyborg_cams[CAMERANET_ROBOTS] += camera
 		if(wires.IsCameraCut()) // 5 = BORG CAMERA
 			camera.status = 0
 

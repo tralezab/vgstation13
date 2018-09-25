@@ -12,10 +12,47 @@ var/global/list/tv_monitors = list()
 	var/list/network = list(CAMERANET_SS13)
 	var/mapping = 0//For the overview file, interesting bit of code.
 
+	var/current_net
+
 	var/list/datum/action/camera/our_actions = list()
-	var/list/obj/machinery/camera/sorted_cams = list()
-	var/list/obj/machinery/camera/deactivated_cams = list()
-	var/list/obj/machinery/camera/cyborg_cams = list()
+	var/static/list/obj/machinery/camera/sorted_cams = list(
+		CAMERANET_SS13 		= list(),
+		CAMERANET_ROBOTS 	= list(),
+		CAMERANET_MINE 		= list(),
+		CAMERANET_ENGI 		= list(),
+		CAMERANET_CARGO 	= list(),
+		CAMERANET_SCIENCE 	= list(),
+		CAMERANET_MEDBAY 	= list(),
+		CAMERANET_THUNDER 	= list(),
+		CAMERANET_ERT 		= list(),
+		CAMERANET_NUKE		= list(),
+		CAMERANET_CREED		= list(),
+		CAMERANET_COURTROOM	= list(),
+		CAMERANET_FIREALARMS 	= list(),
+		CAMERANET_ATMOSALARMS	= list(),
+		CAMERANET_POWERALARMS	= list(),
+	)
+	var/static/list/obj/machinery/camera/deactivated_cams = list(
+		CAMERANET_SS13 		= list(),
+		CAMERANET_ROBOTS 	= list(),
+		CAMERANET_MINE 		= list(),
+		CAMERANET_ENGI 		= list(),
+		CAMERANET_CARGO 	= list(),
+		CAMERANET_SCIENCE 	= list(),
+		CAMERANET_MEDBAY 	= list(),
+		CAMERANET_THUNDER 	= list(),
+		CAMERANET_ERT 		= list(),
+		CAMERANET_NUKE		= list(),
+		CAMERANET_CREED		= list(),
+		CAMERANET_COURTROOM	= list(),
+		CAMERANET_FIREALARMS 	= list(),
+		CAMERANET_ATMOSALARMS	= list(),
+		CAMERANET_POWERALARMS	= list(),
+	)
+	var/list/obj/machinery/camera/cyborg_cams = list(
+		CAMERANET_ROBOTS = list(), // Borgos
+		CAMERANET_ENGI	 = list(), // Mommers
+	)
 
 	light_color = LIGHT_COLOR_RED
 
@@ -35,9 +72,13 @@ var/global/list/tv_monitors = list()
 
 /obj/machinery/computer/security/proc/init_cams()
 	. = ..()
-	sorted_cams = get_cameras()
-	if (sorted_cams.len)
-		current = sorted_cams[1]
+	get_cameras()
+	for (var/network in sorted_cams)
+		current_net = network
+		var/list/net = sorted_cams[network]
+		if (net.len)
+			current = net[1]
+			break
 
 /obj/machinery/computer/security/Destroy()
 	tv_monitors -= src
@@ -143,41 +184,50 @@ var/global/list/tv_monitors = list()
 
 /obj/machinery/computer/security/proc/get_cameras()
 
-	var/list/D = list()
-
 	for (var/obj/machinery/camera/C in cameranet.cameras)
 		if(!istype(C.network, /list))
 			var/turf/T = get_turf(C)
 			WARNING("[C] - Camera at ([T.x],[T.y],[T.z]) has a non list for network, [C.network]")
 			C.network = list(C.network)
 		var/list/tempnetwork = C.network & network
-		if(tempnetwork.len)
-			D.Add(C)
-
-	D = camera_sort(D)
-
-	return D
+		for (var/net in tempnetwork)
+			sorted_cams[net] += C
 
 /obj/machinery/computer/security/proc/next(var/mob/living/user)
 
-	var/place = sorted_cams.Find(current)
+	var/list/net = sorted_cams[current_net]
+
+	var/place = net.Find(current)
 
 	place++
-	if (place > sorted_cams.len)
+	if (place > net.len)
 		place = 1
+		var/index = sorted_cams.Find(current_net)
+		index++
+		if (index > sorted_cams.len)
+			index = 1
+		net = sorted_cams[index]
 
-	var/obj/machinery/camera/C = sorted_cams[place]
+	var/obj/machinery/camera/C = net[place]
 
 	set_camera(user, C)
 
 /obj/machinery/computer/security/proc/previous(var/mob/living/user)
 
-	var/place = sorted_cams.Find(current)
+	var/list/net = sorted_cams[current_net]
 
-	place--
+	var/place = net.Find(current)
+
+	place++
 	if (place <= 0)
-		place = sorted_cams.len
-	var/obj/machinery/camera/C = sorted_cams[place]
+		var/index = sorted_cams.Find(current_net)
+		index--
+		if (index <= 0)
+			index = sorted_cams[sorted_cams.len]
+		net = sorted_cams[index]
+		place = net.len
+
+	var/obj/machinery/camera/C = net[place]
 
 	set_camera(user, C)
 
@@ -243,13 +293,9 @@ var/global/list/tv_monitors = list()
 		user.set_machine(our_computer)
 
 	var/list/L = list()
-	for (var/obj/machinery/camera/C in cameranet.cameras)
-		L.Add(C)
 
-	camera_sort(L)
 
 	var/list/D = list()
-	D["Cancel"] = "Cancel"
 	for(var/obj/machinery/camera/C in L)
 		if(!istype(C.network, /list))
 			var/turf/T = get_turf(C)
@@ -260,7 +306,7 @@ var/global/list/tv_monitors = list()
 			D[text("[][]", C.c_tag, (C.status ? null : " (Deactivated)"))] = C
 
 	var/t = input(user, "Which camera should you change to?") as null|anything in D
-	if(!t || t == "Cancel")
+	if(!t)
 		user.cancel_camera()
 		return 0
 	user.set_machine(our_computer)
@@ -292,8 +338,11 @@ var/global/list/tv_monitors = list()
 
 	var/list/L = list()
 
-	for(var/obj/machinery/camera/C in our_computer.cyborg_cams)
-		L[text("[][]", C.c_tag, (C.status ? null : " (Deactivated)"))] = C
+	for (var/net in our_computer.cyborg_cams)
+		for(var/obj/machinery/camera/C in our_computer.cyborg_cams[net])
+			var/list/temp_network = (C.network & our_computer.network)
+			if (temp_network.len)
+				L[text("[][]", C.c_tag, (C.status ? null : " (Deactivated)"))] = C
 
 	if (!L.len)
 		to_chat(user, "<span class='warning'>No robots connected.</span>")

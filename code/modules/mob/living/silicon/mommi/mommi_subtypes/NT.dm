@@ -4,5 +4,5 @@
 	..()
 	camera.network = list(CAMERANET_ENGI)
 	for (var/obj/machinery/computer/security/engineering/E in tv_monitors)
-		E.cyborg_cams += camera
+		E.cyborg_cams[CAMERANET_ENGI] += camera
 		E.sorted = FALSE
