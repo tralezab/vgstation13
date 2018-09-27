@@ -50,9 +50,6 @@ var/list/camera_names=list()
 	else
 		icon_state = "[camtype]"
 
-/obj/machinery/camera/New(...)
-	..()
-
 /obj/machinery/camera/proc/update_hear()//only cameras with voice analyzers can hear, to reduce the number of unecessary /mob/virtualhearer
 	if(!hear_voice && isHearing())
 		hear_voice = 1

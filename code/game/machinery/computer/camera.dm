@@ -215,6 +215,7 @@ var/global/list/tv_monitors = list()
 				index = network.len
 			current_net = network[index]
 			net = sorted_cams[current_net]
+			place = sorted_cams[current_net].len
 			if (length(net)) // if this is not an empty network...
 				stop = TRUE
 
@@ -222,7 +223,7 @@ var/global/list/tv_monitors = list()
 
 	set_camera(user, C)
 
-// -- Unlike security cameras (who are activated by default), Engineering cameras are dynamic.
+// -- Unlike security cameras (which are activated by default), Engineering cameras are dynamic.
 // They add & remove themselves from the list as power alarms go.
 
 /obj/machinery/computer/security/engineering
