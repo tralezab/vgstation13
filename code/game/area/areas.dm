@@ -108,10 +108,13 @@ var/area/space_area
 					C.network.Remove(CAMERANET_POWERALARMS)
 					for (var/obj/machinery/computer/security/engineering/E in tv_monitors)
 						E.sorted = FALSE
+
+					remove_sorted_cam(C, CAMERANET_POWERALARMS)
 				else
 					C.network.Add(CAMERANET_POWERALARMS)
 					for (var/obj/machinery/computer/security/engineering/E in tv_monitors)
 						E.sorted = FALSE
+					add_sorted_cam(C, CAMERANET_POWERALARMS)
 			for (var/mob/living/silicon/aiPlayer in player_list)
 				if(aiPlayer.z == source.z)
 					if (state == 1)
@@ -161,6 +164,7 @@ var/area/space_area
 				C.network.Add(CAMERANET_ATMOSALARMS)
 				for (var/obj/machinery/computer/security/engineering/E in tv_monitors)
 					E.sorted = FALSE
+				add_sorted_cam(C, CAMERANET_ATMOSALARMS)
 			for(var/mob/living/silicon/aiPlayer in player_list)
 				aiPlayer.triggerAlarm("Atmosphere", src, cameras, src)
 			for(var/obj/machinery/computer/station_alert/a in machines)
@@ -174,6 +178,7 @@ var/area/space_area
 				C.network.Remove(CAMERANET_ATMOSALARMS)
 				for (var/obj/machinery/computer/security/engineering/E in tv_monitors)
 					E.sorted = FALSE
+				remove_sorted_cam(C, CAMERANET_ATMOSALARMS)
 			for(var/mob/living/silicon/aiPlayer in player_list)
 				aiPlayer.cancelAlarm("Atmosphere", src, src)
 			for(var/obj/machinery/computer/station_alert/a in machines)
@@ -254,6 +259,7 @@ var/area/space_area
 			C.network.Add(CAMERANET_FIREALARMS)
 			for (var/obj/machinery/computer/security/engineering/E in tv_monitors)
 				E.sorted = FALSE
+			add_sorted_cam(C, CAMERANET_FIREALARMS)
 		for (var/mob/living/silicon/ai/aiPlayer in player_list)
 			aiPlayer.triggerAlarm("Fire", src, cameras, src)
 		for (var/obj/machinery/computer/station_alert/a in machines)
@@ -273,6 +279,7 @@ var/area/space_area
 			C.network.Remove(CAMERANET_FIREALARMS)
 			for (var/obj/machinery/computer/security/engineering/E in tv_monitors)
 				E.sorted = FALSE
+			remove_sorted_cam(C, CAMERANET_FIREALARMS)
 		for (var/mob/living/silicon/ai/aiPlayer in player_list)
 			aiPlayer.cancelAlarm("Fire", src, src)
 		for (var/obj/machinery/computer/station_alert/a in machines)
@@ -780,3 +787,23 @@ var/list/transparent_icons = list("diagonalWall3","swall_f5","swall_f6","swall_f
 
 	for(var/obj/machinery/door/D in doors)
 		D.update_nearby_tiles()
+
+// Engineering computers
+
+// Those checks if we're adding something to a list ; if not, then they create an empty list to add things to
+
+#define ADD_SORTED_CAM(C, E, network) ((length(E.sorted_cams[network])) ? (E.sorted_cams[network] += C) : (E.sorted_cams[network] = list(C)))
+
+// Those procs just add cameras to CAMERANET lists that are not necessarily populated at roundstart, such as POWERALARMS and that kind of things.
+// We 'break' as the lists are static ; we only need to update the computers once.
+
+// Unlike the CAMERANETS of SS13, those are not indexed ; the POWERALARMS cameranet is cleared when there is no poweralarms.
+
+/proc/add_sorted_cam(var/obj/machinery/camera/C, var/network)
+	for (var/obj/machinery/computer/security/E in tv_monitors)
+		return ADD_SORTED_CAM(C, E, network)
+
+/proc/remove_sorted_cam(var/obj/machinery/camera/C, var/network)
+	for (var/obj/machinery/computer/security/E in tv_monitors)
+		E.sorted_cams[network] -= C
+		break

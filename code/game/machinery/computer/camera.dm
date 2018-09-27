@@ -16,42 +16,8 @@ var/global/list/tv_monitors = list()
 
 	var/list/datum/action/camera/our_actions = list()
 	var/static/list/obj/machinery/camera/sorted_cams = list(
-		CAMERANET_SS13 		= list(),
-		CAMERANET_ROBOTS 	= list(),
-		CAMERANET_MINE 		= list(),
-		CAMERANET_ENGI 		= list(),
-		CAMERANET_CARGO 	= list(),
-		CAMERANET_SCIENCE 	= list(),
-		CAMERANET_MEDBAY 	= list(),
-		CAMERANET_THUNDER 	= list(),
-		CAMERANET_ERT 		= list(),
-		CAMERANET_NUKE		= list(),
-		CAMERANET_CREED		= list(),
-		CAMERANET_COURTROOM	= list(),
-		CAMERANET_FIREALARMS 	= list(),
-		CAMERANET_ATMOSALARMS	= list(),
-		CAMERANET_POWERALARMS	= list(),
-		CAMERANET_SINGULARITY	= list(),
-		CAMERANET_RD			= list(),
 	)
 	var/static/list/obj/machinery/camera/deactivated_cams = list(
-		CAMERANET_SS13 		= list(),
-		CAMERANET_ROBOTS 	= list(),
-		CAMERANET_MINE 		= list(),
-		CAMERANET_ENGI 		= list(),
-		CAMERANET_CARGO 	= list(),
-		CAMERANET_SCIENCE 	= list(),
-		CAMERANET_MEDBAY 	= list(),
-		CAMERANET_THUNDER 	= list(),
-		CAMERANET_ERT 		= list(),
-		CAMERANET_NUKE		= list(),
-		CAMERANET_CREED		= list(),
-		CAMERANET_COURTROOM	= list(),
-		CAMERANET_FIREALARMS 	= list(),
-		CAMERANET_ATMOSALARMS	= list(),
-		CAMERANET_POWERALARMS	= list(),
-		CAMERANET_SINGULARITY	= list(),
-		CAMERANET_RD			= list(),
 	)
 	var/list/obj/machinery/camera/cyborg_cams = list(
 		CAMERANET_ROBOTS = list(), // Borgos
@@ -75,9 +41,9 @@ var/global/list/tv_monitors = list()
 	tv_monitors += src
 
 /obj/machinery/computer/security/proc/init_cams()
-	. = ..()
-	get_cameras()
 	for (var/network in sorted_cams)
+		if (!(network in src.network))
+			continue
 		current_net = network
 		var/list/net = sorted_cams[network]
 		if (net.len)
@@ -89,16 +55,16 @@ var/global/list/tv_monitors = list()
 	our_actions.Cut() // removes our actions
 	..()
 
-/obj/machinery/computer/security/attack_ai(var/mob/user as mob)
+/obj/machinery/computer/security/attack_ai(var/mob/user)
 	src.add_hiddenprint(user)
 	return attack_hand(user)
 
 
-/obj/machinery/computer/security/attack_paw(var/mob/user as mob)
+/obj/machinery/computer/security/attack_paw(var/mob/user)
 	return attack_hand(user)
 
 
-/obj/machinery/computer/security/check_eye(var/mob/user as mob)
+/obj/machinery/computer/security/check_eye(var/mob/user)
 	if ((!Adjacent(user) || user.isStunned() || user.blinded || !( current ) || !( current.status )) && (!istype(user, /mob/living/silicon)))
 		user.cancel_camera()
 		return null
@@ -106,7 +72,7 @@ var/global/list/tv_monitors = list()
 	return 1
 
 
-/obj/machinery/computer/security/attack_hand(var/mob/user as mob)
+/obj/machinery/computer/security/attack_hand(var/mob/user)
 
 	if (src.z > 6)
 		to_chat(user, "<span class='danger'>Unable to establish a connection: </span>You're too far away from the station!")
@@ -187,12 +153,14 @@ var/global/list/tv_monitors = list()
 				use_power(50)
 
 	user.set_machine(src)
+	user.reset_view(current)
 
 /obj/machinery/computer/security/proc/get_cameras()
 
 	for (var/obj/machinery/camera/C in cameranet.cameras)
 		for (var/net in C.network)
-			to_chat(world, "get_cameras() is adding [C] to [net] in [src]")
+			if (!(net in sorted_cams))
+				sorted_cams[net] = list()
 			sorted_cams[net] += C
 
 	for (var/net in sorted_cams)
@@ -201,6 +169,10 @@ var/global/list/tv_monitors = list()
 
 /obj/machinery/computer/security/proc/next(var/mob/living/user)
 
+	if (!current_net)
+		user.cancel_camera()
+		return FALSE
+
 	var/list/net = sorted_cams[current_net]
 
 	var/place = net.Find(current)
@@ -208,11 +180,16 @@ var/global/list/tv_monitors = list()
 	place++
 	if (place > net.len)
 		place = 1
-		var/index = sorted_cams.Find(current_net)
-		index++
-		if (index > sorted_cams.len)
-			index = 1
-		net = sorted_cams[index]
+		var/index = network.Find(current_net)
+		var/stop = FALSE
+		while (!stop)
+			index++
+			if (index > network.len)
+				index = 1
+			current = network[index]
+			net = sorted_cams[current_net]
+			if (length(net)) // if this is not an empty network...
+				stop = TRUE
 
 	var/obj/machinery/camera/C = net[place]
 
@@ -220,18 +197,26 @@ var/global/list/tv_monitors = list()
 
 /obj/machinery/computer/security/proc/previous(var/mob/living/user)
 
+	if (!current_net)
+		user.cancel_camera()
+		return FALSE
+
 	var/list/net = sorted_cams[current_net]
 
 	var/place = net.Find(current)
 
-	place++
+	place--
 	if (place <= 0)
-		var/index = sorted_cams.Find(current_net)
-		index--
-		if (index <= 0)
-			index = sorted_cams[sorted_cams.len]
-		net = sorted_cams[index]
-		place = net.len
+		var/index = network.Find(current_net)
+		var/stop = FALSE
+		while (!stop)
+			index--
+			if (index <= 0)
+				index = network.len
+			current_net = network[index]
+			net = sorted_cams[current_net]
+			if (length(net)) // if this is not an empty network...
+				stop = TRUE
 
 	var/obj/machinery/camera/C = net[place]
 
@@ -250,20 +235,34 @@ var/global/list/tv_monitors = list()
 	light_color = LIGHT_COLOR_YELLOW
 	var/static/sorted = FALSE
 
+// -- So what's going on here ?
+// If it's not sorted, we sort the cameras in POWERALARMS and the rest
+// Then, we look for an active cam ; if we don't have any we display an error message:
+
 /obj/machinery/computer/security/engineering/attack_hand(var/mob/user)
 	if (!sorted)
-		sorted_cams = get_cameras()
+		get_cameras()
+		init_cams()
 		sorted = TRUE
-	if (sorted_cams.len)
-		var/list/net = sorted_cams[1]
-		if (net.len)
-			current = net[1]
-	. = ..()
+	if (current)
+		return ..()
+	to_chat(user, "<span class='warning'>No active cameras found.</span>")
+
+/obj/machinery/computer/security/engineering/init_cams()
+	for (var/net in network)
+		if (length(sorted_cams[net]))
+			current_net = net
+			var/list/L = sorted_cams[net]
+			current = L[1]
+			break
 
 /obj/machinery/computer/security/engineering/get_cameras()
 	for (var/net in network)
 		var/list/cameras_to_sort = sorted_cams[net]
-		cameras_to_sort = camera_sort(cameras_to_sort)
+		if (length(cameras_to_sort))
+			cameras_to_sort = camera_sort(cameras_to_sort)
+	init_cams() // Sorting cameras means that we either added or removed a camera, which means that we should reinitialise the cameras
+
 
 // Action buttons for camera cyclin
 
@@ -304,11 +303,12 @@ var/global/list/tv_monitors = list()
 	if(!isAI(user))
 		user.set_machine(our_computer)
 
-	var/list/L = list()
-
+	if (!cameranet.sorted)
+		cameranet.cameras = camera_sort(cameranet.cameras)
 
 	var/list/D = list()
-	for(var/obj/machinery/camera/C in L)
+
+	for(var/obj/machinery/camera/C in cameranet.cameras)
 		if(!istype(C.network, /list))
 			var/turf/T = get_turf(C)
 			WARNING("[C] - Camera at ([T.x],[T.y],[T.z]) has a non list for network, [C.network]")

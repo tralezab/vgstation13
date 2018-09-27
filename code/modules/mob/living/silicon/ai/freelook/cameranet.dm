@@ -13,6 +13,7 @@ var/datum/cameranet/cameranet = new()
 	// The chunks of the map, mapping the areas that the cameras can see.
 	var/list/chunks = list()
 	var/ready = 0
+	var/sorted = FALSE
 
 // Checks if a chunk has been Generated in x, y, z.
 /datum/cameranet/proc/chunkGenerated(x, y, z)
@@ -81,6 +82,9 @@ var/datum/cameranet/cameranet = new()
 		for (var/network in S.sorted_cams)
 			var/list/net = S.sorted_cams[network]
 			var/list/dea_net = S.deactivated_cams[network]
+			if (!islist(dea_net)) // Case of fire alarms. There might be a better way to do this
+				S.deactivated_cams[network] = list()
+				dea_net = S.deactivated_cams[network]
 			if (c in net)
 				var/index = net.Find(c)
 				var/actual_index = get_insert_index(net,dea_net, index)
