@@ -391,3 +391,55 @@
 	for(var/path in subtypesof(prototype))
 		L += new path()
 	return L
+
+
+/*
+	INSERT/REINSERT PROCS
+
+	List 1 is of the form :
+	1 = /obj/
+	2 = /obj/
+	...
+	n = /obj/
+
+	List 2 is an associative list of indexes that get picked from L1 :
+
+	"4" = /obj/
+	"7" = /obj/
+	...
+
+	"Problem" : if L2 is not empty, you don't insert the "right" index in L2.
+	Three cases :
+		a) index of x <= min(L2)
+		We can safely insert it directly
+
+		b) index of x >= max(L2)
+		Actual index of x = index(x) + length(L2)
+
+		c) Any intermediate case
+		Shave off the max and do it again ; we end up with
+		Actual index of x = index(x) + length(L2) - times we did the recursion
+*/
+
+// This will runtime if x is not in L1 ; because if so, something went wrong and we want to know why
+// Return value : the index we want to insert x in
+// L2 members are strings, we need to convert them to numbers for the first try.
+/proc/get_insert_index(var/list/L1, var/list/L2, var/index_to_insert)
+	var/list/L2_num = list()
+
+	for (var/i in L1)
+		if (isnum(i) || !L2.len)
+			L2_num = L2
+			break
+		L2_num += text2num(i)
+
+	var/max_index = max(L2_num)
+
+	if (index_to_insert <= min(L2_num))
+		return index_to_insert
+	if (index_to_insert >= max_index)
+		return index_to_insert + length(L2)
+
+	// Shaving off the maxvalue
+	L2_num -= max_index
+	return get_insert_index(L1, L2_num, index_to_insert)

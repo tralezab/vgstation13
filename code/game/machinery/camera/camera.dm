@@ -35,6 +35,7 @@ var/list/camera_names=list()
 
 	var/vision_flags = SEE_SELF //Only applies when viewing the camera through a console.
 
+
 /obj/machinery/camera/update_icon()
 	var/EMPd = stat & EMPED
 	var/deactivated = !status
@@ -428,7 +429,6 @@ var/list/camera_messages = list()
 	/*
 	var/namepart =  "[speaker.GetVoice()][speaker.get_alt_name()] "
 	var/messagepart = "<span class='message'>[hearer.lang_treat(speaker, speaking, raw_message)]</span>"
-
 	return "<span class='game say'><span class='name'>[namepart]</span>[messagepart]</span>"
 	*/
 

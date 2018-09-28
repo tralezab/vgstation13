@@ -12,6 +12,7 @@ var/datum/cameranet/cameranet = new()
 	// The chunks of the map, mapping the areas that the cameras can see.
 	var/list/chunks = list()
 	var/ready = 0
+	var/sorted = FALSE
 
 // Checks if a chunk has been Generated in x, y, z.
 /datum/cameranet/proc/chunkGenerated(x, y, z)
@@ -76,12 +77,36 @@ var/datum/cameranet/cameranet = new()
 // Removes a camera from a chunk.
 
 /datum/cameranet/proc/removeCamera(obj/machinery/camera/c)
+	for (var/obj/machinery/computer/security/S in tv_monitors)
+		for (var/network in S.sorted_cams)
+			var/list/net = S.sorted_cams[network]
+			var/list/dea_net = S.deactivated_cams[network]
+			if (!islist(dea_net)) // Case of fire alarms. There might be a better way to do this
+				S.deactivated_cams[network] = list()
+				dea_net = S.deactivated_cams[network]
+			if (c in net)
+				var/index = net.Find(c)
+				var/actual_index = get_insert_index(net,dea_net, index)
+				actual_index = num2text(actual_index) // Because you can't access via L[x] if x is an integer in an associative list.
+				net -= c
+				dea_net[actual_index] += c
+		break // Static lists ; no need to update it for each computer.
 	if(c.can_use())
 		majorChunkChange(c, 0)
 
 // Add a camera to a chunk.
 
 /datum/cameranet/proc/addCamera(obj/machinery/camera/c)
+	for (var/obj/machinery/computer/security/S in tv_monitors)
+		for (var/network in S.deactivated_cams)
+			var/list/net = S.sorted_cams[network]
+			var/list/dea_net = S.deactivated_cams[network]
+			for (var/index in dea_net)
+				if (c == dea_net[index])
+					index = text2num(index)
+					net.Insert(index, c)
+					dea_net -= c
+		break // Static lists ; no need to update it for each computer.
 	if(c.can_use())
 		majorChunkChange(c, 1)
 
@@ -149,7 +174,6 @@ var/datum/cameranet/cameranet = new()
 /*
 /turf/verb/view_chunk()
 	set src in world
-
 	if(cameranet.chunkGenerated(x, y, z))
 		var/datum/camerachunk/chunk = cameranet.getCameraChunk(x, y, z)
 		usr.client.debug_variables(chunk)
